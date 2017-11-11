@@ -35,6 +35,16 @@ lockbox.list <- function(lock, env) {
     lock <- lock$packages[vapply(lock$packages, `[[`, character(1), "name") %in% lock[[env]]]
   }
 
+  # Set versions for packages set to 'latest'
+  latest_index <- which(lapply(lock, function(l) {l$version}) == "latest")
+  if (length(latest_index) > 0) {
+    available_packages <- available.packages()
+    package_names <- available_packages[, "Package"]
+    for (index in latest_index) {
+      lock[[index]]$version <- available_packages[package_names == lock[[index]]$name, "Version"]
+    }
+  }
+  
   lock <- lapply(lock, as.locked_package)
   disallow_special_packages(lock)
   disallow_duplicate_packages(lock)
