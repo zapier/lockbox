@@ -18,6 +18,7 @@
 #' @export
 lockbox <- function(file_or_list, env = getOption("lockbox.env", "!packages")) {
   lock <- lapply(parse_lock(file_or_list, env), as.locked_package)
+
   disallow_special_packages(lock)
   disallow_duplicate_packages(lock)
 
@@ -91,7 +92,17 @@ set_download_dir <- function() {
 as.locked_package <- function(list) {
   stopifnot(is.element("name", names(list)),
             is.element("version", names(list)))
-
+  
+  # Set versions for packages set to 'latest'
+  latest_index <- which(lapply(list, function(l) {l$version}) == "latest")
+  if (length(latest_index) > 0) {
+    available_packages <- available.packages()
+    package_names <- available_packages[, "Package"]
+    for (index in latest_index) {
+      latest[[index]]$version <- available_packages[package_names == lock[[index]]$name, "Version"]
+    }
+  }
+  
   list$is_dependency_package <- isTRUE(list$is_dependency_package %||% FALSE)
 
   if (is.element("repo", names(list)) && !is.element("remote", names(list))) {
